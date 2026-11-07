@@ -55,9 +55,9 @@ fn glfw_key(key: &str) -> Option<String> {
         return Some(format!("key.keyboard.{special}"));
     }
     // Letters, digits and F1 to F12 are plain lowercase names in Horizon.
-    let function_key = name.strip_prefix('F').is_some_and(|n| {
-        !n.is_empty() && n.len() <= 2 && n.bytes().all(|b| b.is_ascii_digit())
-    });
+    let function_key = name
+        .strip_prefix('F')
+        .is_some_and(|n| !n.is_empty() && n.len() <= 2 && n.bytes().all(|b| b.is_ascii_digit()));
     let plain = name.len() == 1 && name.bytes().all(|b| b.is_ascii_alphanumeric());
     (plain || function_key).then(|| format!("key.keyboard.{}", name.to_ascii_lowercase()))
 }
@@ -68,7 +68,12 @@ pub fn convert(root: &Value) -> Settings {
     let mut settings = Settings::default();
     settings.custom_buttons.clear();
     let layers = root.get("layers").and_then(Value::as_array);
-    for (slot, layer) in layers.into_iter().flatten().take(Mode::ALL.len()).enumerate() {
+    for (slot, layer) in layers
+        .into_iter()
+        .flatten()
+        .take(Mode::ALL.len())
+        .enumerate()
+    {
         let buttons = layer.get("normalButtons").and_then(Value::as_array);
         for button in buttons.into_iter().flatten() {
             if let Some(custom) = custom_button(button, slot) {
@@ -112,10 +117,7 @@ fn custom_button(button: &Value, slot: usize) -> Option<CustomButton> {
     let height = if height > 0.0 { height } else { 0.1 };
     let width_ratio = if width > 0.0 { width / height } else { 1.0 };
     let half_width = height * width_ratio / ASSUMED_ASPECT / 2.0;
-    let center = [
-        x / 10_000.0 + half_width,
-        y / 10_000.0 + height / 2.0,
-    ];
+    let center = [x / 10_000.0 + half_width, y / 10_000.0 + height / 2.0];
     for (index, layout) in custom.layouts.iter_mut().enumerate() {
         let mut placement = Placement::new(center[0], center[1], height);
         placement.width_ratio = width_ratio;
@@ -140,9 +142,18 @@ mod tests {
 
     #[test]
     fn glfw_keys_become_vanilla_tokens() {
-        assert_eq!(event_token("key", "GLFW_KEY_W").as_deref(), Some("key.keyboard.w"));
-        assert_eq!(event_token("key", "GLFW_KEY_1").as_deref(), Some("key.keyboard.1"));
-        assert_eq!(event_token("key", "GLFW_KEY_F3").as_deref(), Some("key.keyboard.f3"));
+        assert_eq!(
+            event_token("key", "GLFW_KEY_W").as_deref(),
+            Some("key.keyboard.w")
+        );
+        assert_eq!(
+            event_token("key", "GLFW_KEY_1").as_deref(),
+            Some("key.keyboard.1")
+        );
+        assert_eq!(
+            event_token("key", "GLFW_KEY_F3").as_deref(),
+            Some("key.keyboard.f3")
+        );
         assert_eq!(
             event_token("key", "GLFW_KEY_LEFT_SHIFT").as_deref(),
             Some("key.keyboard.left.shift")
@@ -156,8 +167,14 @@ mod tests {
             event_token("launcher_event", "GLFW_MOUSE_BUTTON_LEFT").as_deref(),
             Some("key.mouse.left")
         );
-        assert_eq!(event_token("switch_layer", "619ef64e376f").as_deref(), Some(MODE_NEXT));
-        assert_eq!(event_token("launcher_event", "launcher.event.switch_ime"), None);
+        assert_eq!(
+            event_token("switch_layer", "619ef64e376f").as_deref(),
+            Some(MODE_NEXT)
+        );
+        assert_eq!(
+            event_token("launcher_event", "launcher.event.switch_ime"),
+            None
+        );
     }
 
     #[test]
