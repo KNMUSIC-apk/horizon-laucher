@@ -2164,10 +2164,23 @@ impl Launcher {
                 let iy = DRAWER_ITEMS_Y + i as f32 * row_step;
                 let selected = *page == self.catalog.page;
                 let fg = if selected { my3_text() } else { my3_muted() };
-                let text_y = iy + (row_h - 20.0) * 0.5;
-                ui.icon(page_icon(*page), item_x + 16.0, text_y, 20.0, fg);
+                // Tall rows show the page's name and a one-line description; short
+                // landscape screens keep the name alone, centred on the row.
+                let two_lines = row_h >= 44.0;
+                let icon_y = iy + (row_h - 20.0) * 0.5;
+                let text_y = if two_lines { iy + 8.0 } else { icon_y };
+                ui.icon(page_icon(*page), item_x + 16.0, icon_y, 20.0, fg);
                 let label = ui.fit_text(Face::Medium, 15.0, crate::i18n::tr(page.name()), item_w - 64.0);
                 ui.text(Face::Medium, 15.0, item_x + 52.0, text_y + 1.0, fg, &label);
+                if two_lines {
+                    let blurb = ui.fit_text(
+                        Face::Regular,
+                        11.0,
+                        crate::i18n::tr(page.blurb()),
+                        item_w - 64.0,
+                    );
+                    ui.text(Face::Regular, 11.0, item_x + 52.0, iy + 28.0, my3_muted(), &blurb);
+                }
                 self.targets
                     .push(([item_x, iy, item_w, row_h], Action::Page(*page)));
             }

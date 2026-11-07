@@ -352,6 +352,18 @@ impl Page {
             Self::Skins => "Skins",
         }
     }
+    /// One line under the page's name in the navigation drawer.
+    pub fn blurb(self) -> &'static str {
+        match self {
+            Self::Play => "Launch Minecraft",
+            Self::Mods => "Install and manage mods",
+            Self::Packs => "Textures and sounds",
+            Self::Shaders => "Lighting and visual effects",
+            Self::Installed => "Versions and profiles on this device",
+            Self::Settings => "Launcher and game options",
+            Self::Skins => "Skins for your account",
+        }
+    }
     pub fn is_catalog(self) -> bool {
         matches!(self, Self::Packs | Self::Mods | Self::Shaders)
     }

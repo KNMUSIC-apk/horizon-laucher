@@ -98,6 +98,13 @@ pub fn tr(english: &'static str) -> &'static str {
         "Used when following the phone language is off" => {
             "Dùng khi không theo ngôn ngữ điện thoại"
         }
+        "Launch Minecraft" => "Khởi chạy Minecraft",
+        "Install and manage mods" => "Cài và quản lý mod",
+        "Textures and sounds" => "Texture và âm thanh",
+        "Lighting and visual effects" => "Ánh sáng và hiệu ứng hình ảnh",
+        "Versions and profiles on this device" => "Phiên bản và hồ sơ trên máy này",
+        "Launcher and game options" => "Tùy chọn launcher và game",
+        "Skins for your account" => "Skin cho tài khoản",
         _ => english,
     }
 }
