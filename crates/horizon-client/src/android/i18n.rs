@@ -105,6 +105,8 @@ pub fn tr(english: &'static str) -> &'static str {
         "Versions and profiles on this device" => "Phiên bản và hồ sơ trên máy này",
         "Launcher and game options" => "Tùy chọn launcher và game",
         "Skins for your account" => "Skin cho tài khoản",
+        "Content" => "Nội dung",
+        "Manage" => "Quản lý",
         _ => english,
     }
 }

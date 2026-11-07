@@ -777,7 +777,19 @@ const DRAWER_ITEM_STEP: f32 = 58.0;
 /// Row pitch of the drawer list. Tall screens use `DRAWER_ITEM_STEP`; short landscape screens
 /// compress the rows so every page stays on screen.
 fn drawer_row_step(h: f32) -> f32 {
-    ((h - DRAWER_ITEMS_Y - 12.0) / Page::ALL.len() as f32).clamp(34.0, DRAWER_ITEM_STEP)
+    let labels = DRAWER_GROUPS.len() as f32 * DRAWER_GROUP_LABEL_H;
+    ((h - DRAWER_ITEMS_Y - 12.0 - labels) / Page::ALL.len() as f32).clamp(34.0, DRAWER_ITEM_STEP)
+}
+
+/// The drawer's groups: the first row that starts each one, and its label.
+const DRAWER_GROUPS: [(usize, &str); 2] = [(1, "Content"), (4, "Manage")];
+/// Height of a group label above its first row.
+const DRAWER_GROUP_LABEL_H: f32 = 24.0;
+
+/// Top of drawer row `index`, counting the group labels above it.
+fn drawer_item_y(h: f32, index: usize) -> f32 {
+    let labels = DRAWER_GROUPS.iter().filter(|(start, _)| *start <= index).count() as f32;
+    DRAWER_ITEMS_Y + index as f32 * drawer_row_step(h) + labels * DRAWER_GROUP_LABEL_H
 }
 
 fn page_icon(page: Page) -> Icon {
@@ -1229,7 +1241,7 @@ impl Launcher {
             .iter()
             .position(|p| *p == self.catalog.page)
             .unwrap_or(0);
-        let target_nav_y = DRAWER_ITEMS_Y + selected_idx as f32 * drawer_row_step(h);
+        let target_nav_y = drawer_item_y(h, selected_idx);
         let has_any_modal = self.catalog.project_modal.is_some()
             || self.catalog.fm_modal.is_some()
             || self.chooser.is_some()
@@ -1381,12 +1393,30 @@ impl Launcher {
                 let card_h = (h - 178.0).clamp(220.0, 280.0);
                 ui.rounded(content_x, card_y, content_w, card_h, 20.0, my3_surface());
                 ui.border(content_x, card_y, content_w, card_h, 20.0, my3_border());
+                // Hero light: a soft violet wash across the top of the card, drawn as
+                // plain translucent shapes (no blur), so the text stays readable.
+                ui.rounded(
+                    content_x + 1.0,
+                    card_y + 1.0,
+                    content_w - 2.0,
+                    card_h * 0.42,
+                    19.0,
+                    color::with_alpha(my3_accent(), 0.14),
+                );
+                ui.text(
+                    Face::SemiBold,
+                    11.0,
+                    content_x + 22.0,
+                    card_y + 16.0,
+                    my3_accent(),
+                    "MINECRAFT JAVA EDITION",
+                );
 
                 ui.text(
                     Face::SemiBold,
                     23.0,
                     content_x + 22.0,
-                    card_y + 18.0,
+                    card_y + 32.0,
                     my3_text(),
                     if installed {
                         "Ready to play"
@@ -1400,7 +1430,7 @@ impl Launcher {
                     Face::Regular,
                     14.0,
                     content_x + 22.0,
-                    card_y + 52.0,
+                    card_y + 62.0,
                     my3_muted(),
                     &format!(
                         "Minecraft 26.3 • Profile {} • {}",
@@ -1480,7 +1510,7 @@ impl Launcher {
                     false,
                 );
                 let btn_y = (h - 92.0).max(card_y + card_h + 12.0);
-                let play_w = content_w.min(256.0);
+                let play_w = content_w.min(288.0);
                 let is_launching = self.launching || self.session_worker.is_some();
                 if is_launching && installed {
                     let radius = 19.0;
@@ -1504,7 +1534,7 @@ impl Launcher {
                     button(
                         &mut ui,
                         &mut self.targets,
-                        [content_x, btn_y, play_w, 46.0],
+                        [content_x, btn_y, play_w, 52.0],
                         if installed {
                             "Play Minecraft 26.3"
                         } else if self.error.is_some() {
@@ -2152,6 +2182,17 @@ impl Launcher {
             let item_w = drawer_w - 24.0;
             let row_step = drawer_row_step(h);
             let row_h = (row_step - 6.0).max(28.0);
+            for (start, name) in DRAWER_GROUPS {
+                let label_y = drawer_item_y(h, start) - DRAWER_GROUP_LABEL_H + 6.0;
+                ui.text(
+                    Face::SemiBold,
+                    11.0,
+                    item_x + 16.0,
+                    label_y,
+                    my3_muted(),
+                    crate::i18n::tr(name),
+                );
+            }
             ui.rounded(
                 item_x,
                 self.anim.nav_pill_y,
@@ -2161,7 +2202,7 @@ impl Launcher {
                 my3_nav_active(),
             );
             for (i, page) in Page::ALL.iter().enumerate() {
-                let iy = DRAWER_ITEMS_Y + i as f32 * row_step;
+                let iy = drawer_item_y(h, i);
                 let selected = *page == self.catalog.page;
                 let fg = if selected { my3_text() } else { my3_muted() };
                 // Tall rows show the page's name and a one-line description; short
