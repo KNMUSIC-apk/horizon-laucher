@@ -47,6 +47,8 @@ mod gallery;
 mod native_ime;
 #[path = "android/performance.rs"]
 mod performance;
+#[path = "android/i18n.rs"]
+mod i18n;
 #[path = "android/platform.rs"]
 mod platform;
 #[rustfmt::skip]

@@ -97,6 +97,12 @@ pub struct Config {
     pub disable_launcher_animations: bool,
     #[serde(default)]
     pub disable_game_animations: bool,
+    /// Use the phone's language when it is English or Vietnamese.
+    #[serde(default)]
+    pub follow_system_language: bool,
+    /// The launcher language when `follow_system_language` is off ("en" or "vi").
+    #[serde(default)]
+    pub manual_language: String,
     #[serde(default)]
     pub last_name_changed: String,
     #[serde(default)]
@@ -154,6 +160,14 @@ impl Orientation {
     }
 }
 impl Config {
+    /// The language the launcher draws in now.
+    pub fn language(&self) -> crate::i18n::Lang {
+        if self.follow_system_language {
+            crate::i18n::system_lang()
+        } else {
+            crate::i18n::Lang::from_code(&self.manual_language).unwrap_or_default()
+        }
+    }
     pub fn load(home: &Path) -> Self {
         let value: serde_json::Value = std::fs::read(home.join("android-launcher.json"))
             .ok()
@@ -179,6 +193,11 @@ impl Config {
         if config.mod_source == crate::shader_catalog::Origin::Modrinth {
             config.mod_source = crate::shader_catalog::Origin::Horizon;
         }
+        // New installs follow the phone's language; a saved choice is kept.
+        if value.get("follow_system_language").is_none() {
+            config.follow_system_language = true;
+        }
+        crate::i18n::set_active(config.language());
         config.theme.sanitize();
         horizon_client::ui_theme::set_active_theme(config.theme.resolve());
         horizon_client::ui_theme::motion::set_reduced_motion(

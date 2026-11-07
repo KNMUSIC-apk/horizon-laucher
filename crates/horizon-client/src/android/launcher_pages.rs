@@ -341,6 +341,8 @@ pub(super) enum Action {
     // Animation & Diagnostics Modal actions
     ToggleLauncherAnimations,
     ToggleShowFps,
+    ToggleFollowSystemLanguage,
+    CycleManualLanguage,
     ToggleGameAnimations,
     CloseDiagnosticsSummary,
     OpenReportsFolder,
@@ -2164,7 +2166,7 @@ impl Launcher {
                 let fg = if selected { my3_text() } else { my3_muted() };
                 let text_y = iy + (row_h - 20.0) * 0.5;
                 ui.icon(page_icon(*page), item_x + 16.0, text_y, 20.0, fg);
-                let label = ui.fit_text(Face::Medium, 15.0, page.name(), item_w - 64.0);
+                let label = ui.fit_text(Face::Medium, 15.0, crate::i18n::tr(page.name()), item_w - 64.0);
                 ui.text(Face::Medium, 15.0, item_x + 52.0, text_y + 1.0, fg, &label);
                 self.targets
                     .push(([item_x, iy, item_w, row_h], Action::Page(*page)));
@@ -4224,8 +4226,9 @@ impl Launcher {
                 let game_anim_off = c.disable_game_animations || touch_cfg.disable_game_animations;
                 // The FPS counter is an extra stored next to the game's options.
                 let show_fps_on = horizon_client::extras::Extras::load(&c.game_home(&self.home)).fps;
+                let manual_lang = crate::i18n::Lang::from_code(&c.manual_language).unwrap_or_default();
 
-                let rows: [(&str, &str, SettingControl<'_>); 13] = [
+                let rows: [(&str, &str, SettingControl<'_>); 15] = [
                     (
                         "APPEARANCE, DPI SCALING & MOTION",
                         "Material 3 Expressive theme studio, adaptive phone DPI scaling & animation toggles",
@@ -4254,9 +4257,22 @@ impl Launcher {
                         ),
                     ),
                     (
-                        "Show FPS In Game",
-                        "Shows the frames-per-second counter over the game screen",
+                        crate::i18n::tr("Show FPS In Game"),
+                        crate::i18n::tr("Shows the frames-per-second counter over the game screen"),
                         SettingControl::Toggle(show_fps_on, Action::ToggleShowFps),
+                    ),
+                    (
+                        crate::i18n::tr("Follow phone language"),
+                        crate::i18n::tr("Use the phone's language when it is English or Vietnamese"),
+                        SettingControl::Toggle(
+                            c.follow_system_language,
+                            Action::ToggleFollowSystemLanguage,
+                        ),
+                    ),
+                    (
+                        crate::i18n::tr("Language"),
+                        crate::i18n::tr("Used when following the phone language is off"),
+                        SettingControl::Button(manual_lang.name(), Action::CycleManualLanguage, false),
                     ),
                     (
                         "Disable In-Game Animations",
@@ -6465,6 +6481,32 @@ impl Launcher {
                     "Launcher animations enabled."
                 }
                 .into();
+            }
+            Some(Action::ToggleFollowSystemLanguage) => {
+                let config = &mut self.catalog.config;
+                config.follow_system_language = !config.follow_system_language;
+                config.save(&self.home)?;
+                crate::i18n::set_active(config.language());
+                self.catalog.status = if config.follow_system_language {
+                    "The launcher follows the phone language."
+                } else {
+                    "The launcher uses the language chosen below."
+                }
+                .into();
+            }
+            Some(Action::CycleManualLanguage) => {
+                let config = &mut self.catalog.config;
+                let next = match crate::i18n::Lang::from_code(&config.manual_language)
+                    .unwrap_or_default()
+                {
+                    crate::i18n::Lang::En => crate::i18n::Lang::Vi,
+                    crate::i18n::Lang::Vi => crate::i18n::Lang::En,
+                };
+                config.manual_language = next.code().into();
+                config.follow_system_language = false;
+                config.save(&self.home)?;
+                crate::i18n::set_active(next);
+                self.catalog.status = format!("Language set to {}.", next.name());
             }
             Some(Action::ToggleShowFps) => {
                 let dir = self.catalog.config.game_home(&self.home);
