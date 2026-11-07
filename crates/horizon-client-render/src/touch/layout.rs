@@ -711,10 +711,14 @@ impl Settings {
         Self::load_from(std::path::Path::new("horizon-touch.json"))
     }
     pub fn load_from(path: &std::path::Path) -> Self {
-        let mut s: Self = std::fs::read(path)
+        let value: Option<serde_json::Value> = std::fs::read(path)
             .ok()
-            .and_then(|b| serde_json::from_slice(&b).ok())
-            .unwrap_or_default();
+            .and_then(|b| serde_json::from_slice(&b).ok());
+        let mut s: Self = match value {
+            Some(value) if super::zalith::is_zalith(&value) => super::zalith::convert(&value),
+            Some(value) => serde_json::from_value(value).unwrap_or_default(),
+            None => Self::default(),
+        };
         s.sanitize();
         if s.control_style == ControlStyle::GoyControl && s.custom_buttons.is_empty() {
             s.custom_buttons = Self::default_goy_buttons();

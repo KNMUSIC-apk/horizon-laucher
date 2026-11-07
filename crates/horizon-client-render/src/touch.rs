@@ -33,6 +33,7 @@ pub mod editor;
 pub use custom::CustomButton;
 pub use editor::{Editor, EditorDragKind, PickerStep};
 pub mod layout;
+pub mod zalith;
 pub use layout::{
     Control, ControlStyle, JoystickMoveArea, JoystickStyle, Mode, Placement, PresetMeta, Settings,
 };
