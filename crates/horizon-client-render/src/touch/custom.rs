@@ -223,7 +223,7 @@ impl TouchControls {
             self.custom_fingers.insert(id, token.into());
             self.fingers.insert(id, (Role::Ignore, point));
             if pressed {
-                self.custom_events.push((token.into(), true));
+                self.emit_custom(token.into(), true);
             }
             return true;
         }
@@ -316,9 +316,9 @@ impl TouchControls {
                             }
                         }
                     }
-                    self.custom_events.push((key, false));
+                    self.emit_custom(key, false);
                     for extra in extra_tokens {
-                        self.custom_events.push((extra, false));
+                        self.emit_custom(extra, false);
                     }
                 }
                 let _ = was_passthrough;
@@ -351,13 +351,13 @@ impl TouchControls {
                         && !self.latched_custom.contains(&key)
                     {
                         self.custom_fingers.insert(id, key.clone());
-                        self.custom_events.push((key, true));
+                        self.emit_custom(key, true);
                         for extra in [second_key, third_key] {
                             if !extra.is_empty()
                                 && CustomButton::valid_token(&extra)
                                 && extra != "key.keyboard.unknown"
                             {
-                                self.custom_events.push((extra, true));
+                                self.emit_custom(extra, true);
                             }
                         }
                         self.clicked = true;
@@ -381,14 +381,14 @@ impl TouchControls {
                 if now_on {
                     self.latched_custom.insert(key.clone());
                 }
-                self.custom_events.push((key, now_on));
+                self.emit_custom(key, now_on);
                 for extra in extras {
                     if now_on {
                         self.latched_custom.insert(extra.clone());
                     } else {
                         self.latched_custom.remove(&extra);
                     }
-                    self.custom_events.push((extra, now_on));
+                    self.emit_custom(extra, now_on);
                 }
                 if !placement.passthrough || self.in_menu {
                     self.fingers.insert(id, (Role::Ignore, point));
@@ -400,9 +400,9 @@ impl TouchControls {
                 && !self.latched_custom.contains(&key);
             self.custom_fingers.insert(id, key.clone());
             if pressed {
-                self.custom_events.push((key, true));
+                self.emit_custom(key, true);
                 for extra in extras {
-                    self.custom_events.push((extra, true));
+                    self.emit_custom(extra, true);
                 }
             }
             if placement.passthrough && !self.in_menu {
@@ -446,6 +446,18 @@ impl TouchControls {
             .chain(self.latched_custom.iter())
             .map(String::as_str)
             .chain(extra_tokens)
+    }
+    /// Queues a key event for the game. A layer-switch button is not a key: on
+    /// press it moves to the next control mode.
+    fn emit_custom(&mut self, token: String, down: bool) {
+        if token == super::zalith::MODE_NEXT {
+            if down {
+                let modes = super::Mode::ALL;
+                self.settings.mode = modes[(self.settings.mode.index() + 1) % modes.len()];
+            }
+            return;
+        }
+        self.custom_events.push((token, down));
     }
     pub fn has_pending_key_events(&self) -> bool {
         !self.custom_events.is_empty()
